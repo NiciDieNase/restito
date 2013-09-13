@@ -4,6 +4,7 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 
 import org.glassfish.grizzly.http.server.Response;
+import org.glassfish.grizzly.http.server.io.OutputBuffer;
 import org.glassfish.grizzly.http.util.HttpStatus;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,6 +25,7 @@ public class ActionTest {
     public void init() {
         MockitoAnnotations.initMocks(this);
         when(response.getWriter()).thenReturn(mock(Writer.class));
+        when(response.getOutputBuffer()).thenReturn(mock(OutputBuffer.class));
         when(response.getCharacterEncoding()).thenReturn("UTF-8");
     }
 
@@ -98,6 +100,20 @@ public class ActionTest {
         stringContent("asd").apply(response);
 
         verify(response.getWriter()).write("asd");
+    }
+
+    @Test
+    public void shouldApplyBinaryResouce() throws Exception{
+        resourceBinaryContent("content.bin").apply(response);
+
+        verify(response.getOutputBuffer()).write(new byte[] {0x74,0x65,0x73,0x74,0x0a});
+    }
+
+    @Test
+    public void shouldApplyBinaryContent() throws Exception{
+       binaryContent(new byte []{0x74,0x65,0x73,0x74,0x0a}).apply(response);
+
+       verify(response.getOutputBuffer()).write(new byte[] {0x74,0x65,0x73,0x74,0x0a});
     }
 
     @Test

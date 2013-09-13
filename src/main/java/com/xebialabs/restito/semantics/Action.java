@@ -144,6 +144,65 @@ public class Action implements Applicable {
         });
     }
 
+    public static Action resourceBinaryContent(String resourcePath) {
+        return resourceBinaryContent(Resources.getResource(resourcePath));
+    }
+
+    /**
+     * Writes content using the specified file and content-type of resource to response.
+     * Tries to detect content type based on file extension. If can not detect => content-type is not set.
+     * For now there are following bindings:
+     * <ul>
+     * <li>.png</li>
+     * <li>.jpg/jpeg => </li>
+     * <li>.gif => image/gif</li>
+     * <li>.mp4 => video/mp4</li>
+     * <li>.pdf => application/pdf</li>
+     * </ul>
+     */
+    public static Action resourceBinaryContent(URL resourceUrl) {
+        try {
+            final byte[] resourceContent = Resources.toByteArray(resourceUrl);
+
+            Action contentTypeAction = custom(Functions.<Response>identity());
+
+            String fileExtension = Files.getFileExtension(resourceUrl.getPath());
+
+            if (fileExtension.equalsIgnoreCase("png")) {
+                contentTypeAction = contentType("image/png");
+            } else if (fileExtension.equalsIgnoreCase("jpg") || fileExtension.equalsIgnoreCase("jpeg")) {
+                contentTypeAction = contentType("image/jpeg");
+            } else if (fileExtension.equalsIgnoreCase("gif")) {
+                contentTypeAction = contentType("image/gif");
+            } else if (fileExtension.equalsIgnoreCase("mp4")) {
+                contentTypeAction = contentType("video/mp4");
+            } else if (fileExtension.equalsIgnoreCase("pdf")) {
+                contentTypeAction = contentType("application/pdf");
+            }
+
+            return composite(contentTypeAction, binaryContent(resourceContent));
+        } catch (IOException e) {
+            throw new RuntimeException("Can not read resource for restito stubbing.");
+        }
+    }
+
+    /**
+     * Writes binary content to response
+     */
+    public static Action binaryContent(final byte[] content) {
+        return new Action(new Function<Response, Response>() {
+            public Response apply(Response input) {
+                input.setContentLength(content.length);
+                try {
+                    input.getOutputBuffer().write(content);
+                } catch (IOException e) {
+                    throw new RuntimeException("Can not write resource content for restito stubbing.");
+                }
+                return input;
+            }
+        });
+    }
+
     /**
      * Sets key-value header on response
      */
